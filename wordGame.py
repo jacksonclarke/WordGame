@@ -40,6 +40,7 @@ baseNewPoints = 0
 multiplyer = 1
 e = False
 t = 0
+allUsers = cursor.execute("SELECT name FROM users").fetchall()
 
 # Functions
 
@@ -334,7 +335,6 @@ in the future, {color.BOLD()}WRITE IT DOWN!{color.END()}\n Username: "
                 f"\nPlease enter your username(Make it unique with no spaces) \nIf you would like to log in again \
 in the future, {color.BOLD()}WRITE IT DOWN!{color.END()}\nUsername: "
             )
-        allUsers = cursor.execute("SELECT name FROM users").fetchall()
         # for user in allUsers:
         #     print(user[0])
         for username in allUsers:
@@ -438,8 +438,14 @@ while playagain == "y":
         # Check number of guesses left and play again.
         if guess_count <= 0:
             print(f"You ran out of guesses! The word was {secretWord}! You lost.")
-            score = score + newPoints
+            if difficulty != "easy":
+                newPoints = baseNewPoints * (guess_count * multiplyer)
+            elif difficulty == "easy":
+                newPoints = baseNewPoints
+            if difficulty == "cheater":
+                score = score + newPoints
             print(f"Points earned: {newPoints}  |  Total Score: {score}")
+            score = score + newPoints
             if difficulty == "cheater":
                 cursor.execute(
                     "UPDATE users SET score = ? WHERE name = ?", (score, user)
@@ -455,7 +461,24 @@ while playagain == "y":
                 reset()
             else:
                 print("\nThanks for playing!")
-                if difficulty != "guest":
+                if difficulty != "easy":
+                    newPoints = baseNewPoints * (guess_count * multiplyer)
+                elif difficulty == "easy":
+                    newPoints = baseNewPoints
+                if difficulty == "cheater":
+                    score = score + newPoints
+                    print(f"See you again soon {user}!")
+                    cursor.execute(
+                        "UPDATE users SET score = ? WHERE name = ?", (score, user)
+                    )
+                    connection.commit()
+                    with closing(sqlite3.connect("users.db")) as connection:
+                        with closing(connection.cursor()) as cursor:
+                            rows = cursor.execute("SELECT 1").fetchall()
+                            print("Game saved!")
+                    quit()
+                score = score + newPoints
+                if user != "guest":
                     print(f"See you again soon {user}!")
                     cursor.execute(
                         "UPDATE users SET score = ? WHERE name = ?", (score, user)
@@ -469,35 +492,36 @@ while playagain == "y":
                 else:
                     print(f"'Guest' Score : {score}")
                     guestfinal = input(
-                        "\nYou have been playing on 'Guest' mode. Would you liked to create a \
-                Username so that your score will be saved(y/n)? "
+                        "\nYou have been playing on 'Guest' mode. Would you liked to create a Username so that your score will be saved(y/n)? "
                     )
                     if guestfinal[0] == "y":
                         target_user = input(
                             f"Please enter your username(Make it unique): "
                         )
-                        while target_user in allUsers:
-                            print(
-                                f"\nThat username is already taken. Please try again."
-                            )
-                            target_user = input(
-                                f"Please enter your username{color.UNDERLINE}(Make it unique){color.END()}: "
-                            )
-                            t += 1
-                            if t >= 8:
-                                print(
-                                    "\nYou have tried to enter a username too many times. Your score was not saved.\n"
-                                )
-                                user = "guest"
-                                break
+                        user = target_user
+                        score = score + newPoints
+
                         if user != "guest":
-                            cursor.execute(
-                                f"INSERT INTO users (name, score) VALUES (?, ?)",
-                                (
-                                    target_user,
-                                    score,
-                                ),
-                            )
+                            print(f"Thanks for signing up {user}!")
+                            try:
+                                cursor.execute(
+                                    f"INSERT INTO users (name, score) VALUES (?, ?)",
+                                    (
+                                        user,
+                                        score,
+                                    ),
+                                )
+                            except:
+                                print(
+                                    f"{color.RED()}{color.BOLD()}ERROR: {color.END()}That username is already taken."
+                                )
+                                print("Your score was not saved.")
+                                quit()
+                            connection.commit()
+                            with closing(sqlite3.connect("users.db")) as connection:
+                                with closing(connection.cursor()) as cursor:
+                                    rows = cursor.execute("SELECT 1").fetchall()
+                                    print("Game saved!")
                         else:
                             print("Consider singing up next time!")
                             quit()
@@ -562,48 +586,43 @@ while playagain == "y":
                                 print("Game saved!")
                         quit()
                     else:
-                        print(f"'Guest' Score : {score}")
                         guestfinal = input(
-                            "You have been playing on 'Guest' mode. Would you liked to create a \
-                    Username so that your score will be saved(y/n)? "
+                            "\nYou have been playing on 'Guest' mode. Would you liked to create a Username so that your score will be saved(y/n)? "
                         )
-                        if guestfinal[0] == "y":
-                            target_user = input(
-                                f"Please enter your username(Make it unique): "
-                            )
-                            if target_user in allUsers:
-                                while target_user in allUsers:
-                                    print(
-                                        f"\nThat username is already taken. Please try again."
-                                    )
-                                    target_user = input(
-                                        f"Please enter your username{color.UNDERLINE}(Make it unique){color.END()}: "
-                                    )
-                                    t += 1
-                                    if t >= 8:
-                                        print(
-                                            "\nYou have tried to enter a username too many times. Your score was not saved.\n"
-                                        )
-                                        user = "guest"
-                                        break
-                            if user != "guest":
-                                print(f"Thanks for signing up {user}!")
+                    if guestfinal[0] == "y":
+                        target_user = input(
+                            f"Please enter your username(Make it unique): "
+                        )
+                        user = target_user
+                        score = score + newPoints
+                        if user != "guest":
+                            print(f"Thanks for signing up {user}!")
+                            try:
                                 cursor.execute(
                                     f"INSERT INTO users (name, score) VALUES (?, ?)",
                                     (
-                                        target_user,
+                                        user,
                                         score,
                                     ),
                                 )
-                                print("Game saved!")
+                            except:
+                                print(
+                                    f"{color.RED()}{color.BOLD()}ERROR: {color.END()}That username is already taken."
+                                )
+                                print("Your score was not saved.")
                                 quit()
-
-                            else:
-                                print("Consider singing up next time!")
-                                quit()
+                            connection.commit()
+                            with closing(sqlite3.connect("users.db")) as connection:
+                                with closing(connection.cursor()) as cursor:
+                                    rows = cursor.execute("SELECT 1").fetchall()
+                                    print("Game saved!")
                         else:
                             print("Consider singing up next time!")
                             quit()
+
+                    else:
+                        print("Consider singing up next time!")
+                        quit()
 
                 # Check if user gave up on current word and play again.
             elif guess == "giveup":

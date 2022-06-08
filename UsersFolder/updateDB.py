@@ -33,7 +33,7 @@ cursor = connection.cursor()
 # print(rows)
 
 ###Delete user
-# delete_user = "master"
+# delete_user = "jtc"
 # cursor.execute("DELETE FROM users WHERE name = ?", (delete_user,))
 # rows = cursor.execute("SELECT name, score FROM users").fetchall()
 # print(rows)
